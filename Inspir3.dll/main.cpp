@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include "tcp.h"
+#include "log.h"
 
 #pragma comment(lib, "Ws2_32.lib")
 
@@ -67,25 +68,15 @@ DWORD ThreadProc(LPVOID lpdwThreadParam){
  */
 void __stdcall RVExtension(char *output, int outputSize, const char *function){
 
-	FILE *f;
-	fopen_s(&f, "inspir3.log", "a");
+	log_init(false, true, "inspir3.log");
 	
-	char *msg1 = "RVExtension()\n";
-	fwrite(msg1, sizeof(char), strlen(msg1), f);
+	log_info("RVExtension(outputSize: %d, function: '%s')", outputSize, function);
+	
+	if (!strcmp(function, "version")){                       //Function version()
 
-	fclose(f);
+		strcpy_s(output, outputSize, "0.3");
 
-	/*
-	 * version
-	 */
-	if (!strcmp(function, "version")){
-		strcpy_s(output, outputSize, "0.3");return;
-  }
-
-	/*
-	 * initThread
-	 */
-	if (!strcmp(function, "initThread")){
+  }else	if (!strcmp(function, "initThread")){              //Function initThread()
 
 		strcpy(message, "");
 
@@ -97,25 +88,27 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function){
 											NULL,																	//Thread parameter
 											0,																		//Immediately run the thread
 											&dwThreadId) != NULL) {								//Thread Id
-			strcpy_s(output, outputSize, "OK");return;
+			
+			log_info("Init thread success");
+			strcpy_s(output, outputSize, "OK");
+
 		}else{
-			strcpy_s(output, outputSize, "KO");return;
+
+			log_error("Init thread failed");
+			strcpy_s(output, outputSize, "KO");
+
 		}	
-	}
+	}else	if (!strcmp(function, "exitThread")){		                   //Function initThread()
 
-	/*
-	 * Other ? Send to thread
-	 */
-	if (!strcmp(function, "exitThread")){		
 		strcpy(message, "exit");
-		strcpy_s(output, outputSize, "OK");return;		
-  }
+		strcpy_s(output, outputSize, "OK");		
 
-	if (!strcmp(function, "gna")){		
+  }else	if (!strcmp(function, "gna")){                            //Function gna()
 		strcpy(message, "gna");
-		strcpy_s(output, outputSize, "OK");return;
+		strcpy_s(output, outputSize, "OK");
 	}
 
-	//strcpy_s(message, strlen(function), function);
-  
+	log_info("RVExtension() End");
+
+	log_close();
 }
