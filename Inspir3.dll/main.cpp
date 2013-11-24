@@ -2,10 +2,8 @@
 
 #include <windows.h>
 #include <stdio.h>
-#include "tcp.h"
-#include "log.h"
-
-#pragma comment(lib, "Ws2_32.lib")
+#include "Tcp.h"
+#include "Log.h"
 
 BOOL APIENTRY DllMain( HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved){
 	switch (ul_reason_for_call){
@@ -30,35 +28,38 @@ char message[255];
  */
 DWORD ThreadProc(LPVOID lpdwThreadParam){
 
-	FILE *f;
+	Log *log = new Log();
+	Tcp *tcp = new Tcp();
+
+	log->init(false, true, "inspir3_thread.log");
+
+	log->info("Init thread OK");
 	
-	fopen_s(&f, "thread.txt", "a");
-
-	char *msg1 = "Init thread OK\n";
-	fwrite(msg1, sizeof(char), strlen(msg1), f);
-
-	tcp_init();
-	tcp_connect("127.0.0.1", 8124);
+	log->info("Connecting to serveur...");
+	tcp->open("127.0.0.1", 8124);
+	log->info("Connecting to serveur... OK");
 
 	for(;;){
 
 		if (strlen(message) > 0){
-			fwrite(message, sizeof(char), strlen(message), f);
-			tcp_send(message);
+
+			log->info("Sending '%s'...", message);
+			tcp->write(message);
 			//strcpy(message, "");			
 		}
 
+		log->debug("Sleeping...");
 		Sleep(1000);
 
 		if (!strcmp(message, "exit")) break;
 	}
 
-	char *msg2 = "Bye !\n";
+	log->debug("Closing connection...");
+	
+	tcp->close();
 
-	fwrite(msg2, sizeof(char), strlen(msg2), f);
-
-	fclose(f);
-	tcp_close();
+	log->debug("Exiting thread... Bye!");
+	log->close();
 
 	return 0;
 }
@@ -68,9 +69,11 @@ DWORD ThreadProc(LPVOID lpdwThreadParam){
  */
 void __stdcall RVExtension(char *output, int outputSize, const char *function){
 
-	log_init(false, true, "inspir3.log");
+	Log *log = new Log();
+
+	log->init(false, true, "inspir3.log");
 	
-	log_info("RVExtension(outputSize: %d, function: '%s')", outputSize, function);
+	log->info("RVExtension(outputSize: %d, function: '%s')", outputSize, function);
 	
 	if (!strcmp(function, "version")){                       //Function version()
 
@@ -89,12 +92,12 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function){
 											0,																		//Immediately run the thread
 											&dwThreadId) != NULL) {								//Thread Id
 			
-			log_info("Init thread success");
+			log->info("Init thread success");
 			strcpy_s(output, outputSize, "OK");
 
 		}else{
 
-			log_error("Init thread failed");
+			log->error("Init thread failed");
 			strcpy_s(output, outputSize, "KO");
 
 		}	
@@ -108,7 +111,7 @@ void __stdcall RVExtension(char *output, int outputSize, const char *function){
 		strcpy_s(output, outputSize, "OK");
 	}
 
-	log_info("RVExtension() End");
+	log->info("RVExtension() End");
 
-	log_close();
+	log->close();
 }

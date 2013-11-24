@@ -1,58 +1,62 @@
+/*
+ * <author>Andice Rupen</author>
+ * <email>andice.rupen@gmail.com</email>
+ * <date>2013-11-24</date>
+ * <summary>A minimal library to send string over tcp/ip</summary>
+ */
 
-#include <winsock2.h>
-
-int iResult;
-WSADATA wsaData;
-SOCKET ConnectSocket = INVALID_SOCKET;
-struct sockaddr_in clientService; 
+#include "Tcp.h"
 
 /*
- * tcp_init
+ * Constructor
  */
-int tcp_init(){
+Tcp::Tcp(){
+	this->connectSocket = INVALID_SOCKET;
+}
 
-	iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
-  if (iResult != NO_ERROR) {
+/*
+ * Open connection
+ */
+int Tcp::open(char *Addr, unsigned short Port){
+
+	WSADATA wsaData;
+
+	int ret = WSAStartup(MAKEWORD(2,2), &wsaData);
+  if (ret != NO_ERROR) {
 		return 1;
   }
 
-  ConnectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-  if (ConnectSocket == INVALID_SOCKET) {
+  this->connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (this->connectSocket == INVALID_SOCKET) {
 		WSACleanup();
 		return 2;
   }
 
-	return 0;
-}
-
-/*
- * tcp_connect
- */
-int tcp_connect(char *Addr, unsigned short Port){
+	struct sockaddr_in clientService;
 
   clientService.sin_family = AF_INET;
   clientService.sin_addr.s_addr = inet_addr(Addr);
   clientService.sin_port = htons(Port);
 
-  iResult = connect( ConnectSocket, (SOCKADDR*) &clientService, sizeof(clientService) );
-  if (iResult == SOCKET_ERROR) {		
-    closesocket(ConnectSocket);
+	ret = connect(this->connectSocket, (SOCKADDR*) &clientService, sizeof(clientService) );
+  if (ret == SOCKET_ERROR) {		
+    closesocket(this->connectSocket);
     WSACleanup();
-    return 1;
+    return 3;
   }
 
 	return 0;
 }
 
 /*
- * tcp_send
+ * Send string data into socket
  */
-int tcp_send(char *Text){
+int Tcp::write(char *Text){
 
-  iResult = send( ConnectSocket, Text, (int)strlen(Text), 0 );
+  int ret = send(this->connectSocket, Text, (int)strlen(Text), 0 );
   
-	if (iResult == SOCKET_ERROR) {
-      closesocket(ConnectSocket);
+	if (ret == SOCKET_ERROR) {
+      closesocket(this->connectSocket);
       WSACleanup();
       return 1;
   }
@@ -61,19 +65,21 @@ int tcp_send(char *Text){
 }
 
 /*
- * tcp_close
+ * Close connection
  */
-int tcp_close(){
+int Tcp::close(){
 
-  iResult = shutdown(ConnectSocket, SD_SEND);
-  if (iResult == SOCKET_ERROR) {
-      closesocket(ConnectSocket);
+  int ret = shutdown(this->connectSocket, SD_SEND);
+  
+	if (ret == SOCKET_ERROR) {
+      closesocket(this->connectSocket);
       WSACleanup();
       return 1;
   }
 
-  iResult = closesocket(ConnectSocket);
-  if (iResult == SOCKET_ERROR) {
+  ret = closesocket(this->connectSocket);
+  
+	if (ret == SOCKET_ERROR) {
       WSACleanup();
       return 2;
   }

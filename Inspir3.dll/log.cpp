@@ -1,50 +1,45 @@
 /*
  * <author>Andice Rupen</author>
  * <email>andice.rupen@gmail.com</email>
- * <date>2013-11-23</date>
+ * <date>2013-11-24</date>
  * <summary>A minimal library to log messages into file or console</summary>
  */
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <time.h>
-#include <string.h>
+#include "Log.h"
 
-typedef enum {DEBUG, INFO, ERROR} log_level;
-
-#define log_bufferSize 4000
-
-char log_buffertext[log_bufferSize] = "";
-char log_bufferdatetime[20] = "";
-FILE *log_f;
-bool log_console;
-bool log_file;
+/*
+ *
+ */
+Log::Log(){
+	strcpy_s(this->buffertext, log_bufferSize, "");
+	strcpy_s(this->bufferdatetime, 20, "");
+}
 
 /*
  * Init logging
  */
-void log_init(bool Console, bool File, char *Filename){
-	log_console = Console;
-	log_file = File;
+void Log::init(bool Console, bool File, char *Filename){
+	this->console = Console;
+	this->file = File;
 
-	if (log_file) {
-		fopen_s(&log_f, Filename, "a+");
+	if (this->file) {
+		fopen_s(&this->f, Filename, "a+");
 	}
 }
 
 /*
  *
  */
-void log_close(){
-	if (log_file) {
-		fclose(log_f);
+void Log::close(){
+	if (this->file) {
+		fclose(this->f);
 	}
 }
 
 /*
  * Get datetime
  */
-char *log_datetime(){
+char *Log::datetime(){
 	
 	time_t timer;
 	struct tm tm_info;
@@ -52,29 +47,29 @@ char *log_datetime(){
 	time(&timer);
 	localtime_s(&tm_info, &timer);
 
-	strftime(log_bufferdatetime, 20, "%d/%m/%Y %H:%M:%S", &tm_info);
+	strftime(this->bufferdatetime, 20, "%d/%m/%Y %H:%M:%S", &tm_info);
 	
-	return log_bufferdatetime;
+	return this->bufferdatetime;
 }
 
 /*
  * Main function
  */
-void log_text(log_level Level, char* Text){
+void Log::text(log_level Level, char* Text){
 
 		char header[30] = "";
 		char buffer[4000] = "";
 
-		strcpy_s(header, log_datetime());
+		strcpy_s(header, this->datetime());
 
 		switch(Level){
-			case DEBUG:
+			case log_DEBUG:
 				strcat_s(header, " [DEBUG] ");
 				break;
-			case INFO:
+			case log_INFO:
 				strcat_s(header, " [INFO]  ");
 				break;
-			case ERROR:
+			case log_ERROR:
 				strcat_s(header, " [ERROR] ");
 				break;
 		}
@@ -83,53 +78,53 @@ void log_text(log_level Level, char* Text){
 		strcat_s(buffer, Text);
 		strcat_s(buffer, "\n");
 
-		if (log_console) {
+		if (this->console) {
 				printf(buffer);
 		}
 
-		if (log_file){
-			fwrite(buffer, sizeof(char), strlen(buffer), log_f);
+		if (this->file){
+			fwrite(buffer, sizeof(char), strlen(buffer), this->f);
 		}
 }
 
 /*
  *
  */
-void log_debug(const char* Format, ...){
+void Log::debug(const char* Format, ...){
 
 	va_list arglist;
 
 	va_start(arglist, Format);
-	vsnprintf_s(log_buffertext, log_bufferSize, Format, arglist);
+	vsnprintf_s(this->buffertext, log_bufferSize, Format, arglist);
 	va_end(arglist);
 
-	log_text(DEBUG, log_buffertext);
+	this->text(log_DEBUG, this->buffertext);
 }
 
 /*
  *
  */
-void log_info(const char* Format, ...){
+void Log::info(const char* Format, ...){
 
 	va_list arglist;
 
 	va_start(arglist, Format);
-	vsnprintf_s(log_buffertext, log_bufferSize, Format, arglist);
+	vsnprintf_s(this->buffertext, log_bufferSize, Format, arglist);
 	va_end(arglist);
 
-	log_text(INFO, log_buffertext);
+	this->text(log_INFO, this->buffertext);
 }
 
 /*
  *
  */
-void log_error(const char* Format, ...){
+void Log::error(const char* Format, ...){
 
 	va_list arglist;
 
 	va_start(arglist, Format);
-	vsnprintf_s(log_buffertext, log_bufferSize, Format, arglist);
+	vsnprintf_s(this->buffertext, log_bufferSize, Format, arglist);
 	va_end(arglist);
 
-	log_text(ERROR, log_buffertext);
+	this->text(log_ERROR, this->buffertext);
 }
